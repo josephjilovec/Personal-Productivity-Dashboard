@@ -1,0 +1,79 @@
+## Create a "models/Task.js" file
+
+// models/Task.js
+const mongoose = require('mongoose');
+
+const taskSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+  },
+  description: {
+    type: String,
+  },
+  dueDate: {
+    type: Date,
+  },
+  // Add more fields as needed
+});
+
+const Task = mongoose.model('Task', taskSchema);
+
+module.exports = Task;
+
+
+## Use this Task model in the "controllers/taskController.js" file for database interaction
+
+// controllers/taskController.js
+const Task = require('../models/Task');
+
+// Controller functions for tasks
+exports.getAllTasks = async (req, res) => {
+  try {
+    const tasks = await Task.find();
+    res.status(200).json(tasks);
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching tasks from the database' });
+  }
+};
+
+exports.createTask = async (req, res) => {
+  try {
+    const { title, description, dueDate } = req.body;
+    const newTask = new Task({
+      title,
+      description,
+      dueDate,
+    });
+    const savedTask = await newTask.save();
+    res.status(201).json(savedTask);
+  } catch (error) {
+    res.status(500).json({ error: 'Error creating a new task' });
+  }
+};
+
+exports.updateTask = async (req, res) => {
+  try {
+    const { title, description, dueDate } = req.body;
+    const taskId = req.params.id;
+    const updatedTask = await Task.findByIdAndUpdate(
+      taskId,
+      { title, description, dueDate },
+      { new: true }
+    );
+    res.status(200).json(updatedTask);
+  } catch (error) {
+    res.status(500).json({ error: 'Error updating the task' });
+  }
+};
+
+exports.deleteTask = async (req, res) => {
+  try {
+    const taskId = req.params.id;
+    await Task.findByIdAndDelete(taskId);
+    res.status(200).json({ message: 'Task deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error deleting the task' });
+  }
+};
+
