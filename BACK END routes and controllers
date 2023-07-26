@@ -1,0 +1,68 @@
+## Create a "routes/tasks.js" file
+
+// routes/tasks.js
+const express = require('express');
+const router = express.Router();
+const taskController = require('../controllers/taskController');
+
+// Routes for tasks
+router.get('/tasks', taskController.getAllTasks);
+router.post('/tasks', taskController.createTask);
+router.put('/tasks/:id', taskController.updateTask);
+router.delete('/tasks/:id', taskController.deleteTask);
+
+module.exports = router;
+
+
+
+## Create a "controllers/taskController.js" file
+
+// controllers/taskController.js
+const Task = require('../models/Task');
+
+// Controller functions for tasks
+exports.getAllTasks = (req, res) => {
+  // Implement code to fetch all tasks from the database and send the response
+};
+
+exports.createTask = (req, res) => {
+  // Implement code to create a new task and send the response
+};
+
+exports.updateTask = (req, res) => {
+  // Implement code to update a task and send the response
+};
+
+exports.deleteTask = (req, res) => {
+  // Implement code to delete a task and send the response
+};
+
+
+## Create the "models/Task.js" file for the Task schema
+
+// models/Task.js
+const mongoose = require('mongoose');
+
+const taskSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+  },
+  description: {
+    type: String,
+  },
+  dueDate: {
+    type: Date,
+  },
+  // Add more fields as needed
+});
+
+const Task = mongoose.model('Task', taskSchema);
+
+module.exports = Task;
+
+## Import the tasks route in the main index.js file
+
+// index.js
+const taskRoutes = require('./routes/tasks');
+app.use('/api', taskRoutes);
