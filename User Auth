@@ -1,0 +1,116 @@
+   ## Make sure to install the necessary packages (npm install bcrypt jsonwebtoken)
+
+   ## Create a "models/User.js" file for the User schema
+
+// models/User.js
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+
+const userSchema = new mongoose.Schema({
+  username: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  password: {
+    type: String,
+    required: true,
+  },
+});
+
+// Hash the user's password before saving to the database
+userSchema.pre('save', async function (next) {
+  try {
+    if (!this.isModified('password')) {
+      return next();
+    }
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Method to compare user's password with the hashed password in the database
+userSchema.methods.comparePassword = async function (password) {
+  try {
+    return await bcrypt.compare(password, this.password);
+  } catch (error) {
+    throw new Error('Error comparing passwords');
+  }
+};
+
+const User = mongoose.model('User', userSchema);
+
+module.exports = User;
+
+
+## Use this User model in the "controllers/authController.js" file for user authentication
+
+// controllers/authController.js
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+
+const generateToken = (user) => {
+  return jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+    expiresIn: '1h',
+  });
+};
+
+exports.register = async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Username already exists' });
+    }
+    const newUser = new User({ username, password });
+    await newUser.save();
+    const token = generateToken(newUser);
+    res.status(201).json({ token });
+  } catch (error) {
+    res.status(500).json({ error: 'Error registering user' });
+  }
+};
+
+exports.login = async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Invalid password' });
+    }
+    const token = generateToken(user);
+    res.status(200).json({ token });
+  } catch (error) {
+    res.status(500).json({ error: 'Error logging in' });
+  }
+};
+
+
+## Create the "routes/auth.js" file for authentication routes
+
+// routes/auth.js
+const express = require('express');
+const router = express.Router();
+const authController = require('../controllers/authController');
+
+// Authentication routes
+router.post('/register', authController.register);
+router.post('/login', authController.login);
+
+module.exports = router;
+
+
+## Import the authentication route in the main "index.js" file
+
+// index.js
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
+
+
