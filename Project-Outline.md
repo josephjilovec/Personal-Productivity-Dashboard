@@ -14,13 +14,6 @@ Key Features:
 
     Collaboration: Collaborate with others by sharing tasks and goals with team members or family members.
 
-Technologies:
-
-    Front-end: HTML, CSS, JavaScript, React.js or Vue.js
-    Back-end: Node.js, Express.js
-    Database: MongoDB or PostgreSQL
-    User Authentication: JWT or OAuth
-    Data Visualization: D3.js or Chart.js
 
 Benefits:
 
