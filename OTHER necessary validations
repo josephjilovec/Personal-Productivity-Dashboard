@@ -1,0 +1,15 @@
+# Setting up the project (bash)
+
+mkdir personal-productivity-dashboard-backend
+cd personal-productivity-dashboard-backend
+npm init -y
+
+# Install necessary dependencies (bash)
+
+npm install express mongoose cors dotenv
+
+
+
+# Create a makefile (.env file) in the root directory and add your MongoDB connection string
+
+MONGO_URI=your_mongodb_connection_string_here
