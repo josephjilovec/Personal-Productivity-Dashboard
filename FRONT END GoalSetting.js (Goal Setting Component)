@@ -1,0 +1,32 @@
+import React, { useState } from 'react';
+
+function GoalSetting() {
+  const [goals, setGoals] = useState([]);
+  const [newGoal, setNewGoal] = useState('');
+
+  const handleAddGoal = () => {
+    if (newGoal.trim() !== '') {
+      setGoals([...goals, newGoal]);
+      setNewGoal('');
+    }
+  };
+
+  return (
+    <div>
+      <h2>Goal Setting</h2>
+      <input
+        type="text"
+        value={newGoal}
+        onChange={(e) => setNewGoal(e.target.value)}
+      />
+      <button onClick={handleAddGoal}>Add Goal</button>
+      <ul>
+        {goals.map((goal, index) => (
+          <li key={index}>{goal}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default GoalSetting;
