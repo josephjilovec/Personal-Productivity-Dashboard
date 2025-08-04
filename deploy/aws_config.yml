@@ -1,0 +1,108 @@
+# AWS ECS Task Definition for QuantumFlow Toolkit
+version: '1.0'
+services:
+  # Python Backend Service (FastAPI)
+  python-backend:
+    image: <account-id>.dkr.ecr.<region>.amazonaws.com/quantumflow-toolkit:latest
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+    cpu: 1024 # 1 vCPU
+    memory: 2048 # 2GB
+    essential: true
+    portMappings:
+      - containerPort: 8000
+        hostPort: 8000
+        protocol: tcp
+    environment:
+      - name: CIRQ_API_KEY
+        value: "<your_google_quantum_key>"
+      - name: QISKIT_API_KEY
+        value: "<your_ibm_quantum_key>"
+      - name: PENNYLANE_API_KEY
+        value: "<your_xanadu_cloud_key>"
+    healthCheck:
+      command: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
+      interval: 30
+      timeout: 5
+      retries: 3
+      startPeriod: 60
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: /ecs/quantumflow-backend
+        awslogs-region: <region>
+        awslogs-stream-prefix: backend
+
+  # React Frontend Service
+  react-frontend:
+    image: <account-id>.dkr.ecr.<region>.amazonaws.com/quantumflow-toolkit:latest
+    command: ["serve", "-s", "/app/frontend/build", "-l", "3000"]
+    cpu: 512 # 0.5 vCPU
+    memory: 1024 # 1GB
+    essential: true
+    portMappings:
+      - containerPort: 3000
+      hostPort: 3000
+      protocol: tcp
+    healthCheck:
+      command: ["CMD-SHELL", "curl -f http://localhost:3000 || exit 1"]
+      interval: 30
+      timeout: 5
+      retries: 3
+      startPeriod: 60
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: /ecs/quantumflow-frontend
+        awslogs-region: <region>
+        awslogs-stream-prefix: frontend
+
+# ECS Service Configuration
+ecsService:
+  cluster: quantumflow-cluster
+  serviceName: quantumflow-service
+  taskDefinition: quantumflow-task
+  desiredCount: 2
+  launchType: FARGATE
+  networkConfiguration:
+    awsvpcConfiguration:
+      subnets:
+        - subnet-<subnet-id-1>
+        - subnet-<subnet-id-2>
+      securityGroups:
+        - sg-<security-group-id>
+      assignPublicIp: ENABLED
+  loadBalancers:
+    - targetGroupArn: arn:aws:elasticloadbalancing:<region>:<account-id>:targetgroup/quantumflow-backend/<target-group-id>
+      containerName: python-backend
+      containerPort: 8000
+    - targetGroupArn: arn:aws:elasticloadbalancing:<region>:<account-id>:targetgroup/quantumflow-frontend/<target-group-id>
+      containerName: react-frontend
+      containerPort: 3000
+  deploymentConfiguration:
+    maximumPercent: 200
+    minimumHealthyPercent: 50
+
+# Auto Scaling Configuration
+autoScaling:
+  targetTrackingScalingPolicy:
+    - policyName: quantumflow-cpu-scaling
+      targetValue: 70.0
+      scaleOutCooldown: 300
+      scaleInCooldown: 300
+      metricType: ECSServiceAverageCPUUtilization
+    - policyName: quantumflow-memory-scaling
+      targetValue: 80.0
+      scaleOutCooldown: 300
+      scaleInCooldown: 300
+      metricType: ECSServiceAverageMemoryUtilization
+  minCapacity: 2
+  maxCapacity: 10
+
+# Secrets Configuration (using AWS Secrets Manager)
+secrets:
+  - name: quantumflow-secrets
+    valueFrom: arn:aws:secretsmanager:<region>:<account-id>:secret:quantumflow-secrets-<id>
+    keys:
+      - CIRQ_API_KEY
+      - QISKIT_API_KEY
+      - PENNYLANE_API_KEY
