@@ -50,10 +50,5 @@ RUN npm install -g serve
 # Expose ports for FastAPI backend (8000) and React frontend (3000)
 EXPOSE 8000 3000
 
-# Set environment variables (to be overridden at runtime)
-ENV CIRQ_API_KEY=""
-ENV QISKIT_API_KEY=""
-ENV PENNYLANE_API_KEY=""
-
 # Start FastAPI and React frontend
 CMD ["sh", "-c", "cd /app/frontend && serve -s build -l 3000 & cd /app/backend/python && uvicorn main:app --host 0.0.0.0 --port 8000"]
