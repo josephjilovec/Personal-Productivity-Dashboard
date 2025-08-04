@@ -1,0 +1,148 @@
+---
+# Deployment for QuantumFlow Toolkit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quantumflow-deployment
+  labels:
+    app: quantumflow
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: quantumflow
+  template:
+    metadata:
+      labels:
+        app: quantumflow
+    spec:
+      containers:
+      # Python Backend (FastAPI)
+      - name: python-backend
+        image: quantumflow-toolkit:latest
+        command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+        ports:
+        - containerPort: 8000
+          name: backend
+        env:
+        - name: CIRQ_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: quantumflow-secrets
+              key: cirq-api-key
+        - name: QISKIT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: quantumflow-secrets
+              key: qiskit-api-key
+        - name: PENNYLANE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: quantumflow-secrets
+              key: pennylane-api-key
+        resources:
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+      # React Frontend
+      - name: react-frontend
+        image: quantumflow-toolkit:latest
+        command: ["serve", "-s", "/app/frontend/build", "-l", "3000"]
+        ports:
+        - containerPort: 3000
+          name: frontend
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+      imagePullSecrets:
+      - name: ecr-pull-secret
+
+---
+# Service for exposing the application
+apiVersion: v1
+kind: Service
+metadata:
+  name: quantumflow-service
+spec:
+  selector:
+    app: quantumflow
+  ports:
+  - name: backend
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
+  - name: frontend
+    port: 3000
+    targetPort: 3000
+    protocol: TCP
+  type: LoadBalancer
+
+---
+# Horizontal Pod Autoscaler for scaling
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: quantumflow-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: quantumflow-deployment
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+# Secret for storing API keys
+apiVersion: v1
+kind: Secret
+metadata:
+  name: quantumflow-secrets
+type: Opaque
+data:
+  cirq-api-key: ""  # Base64-encoded Google Quantum Engine API key
+  qiskit-api-key: ""  # Base64-encoded IBM Quantum API key
+  pennylane-api-key: ""  # Base64-encoded Xanadu Cloud API key
