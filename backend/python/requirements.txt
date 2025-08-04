@@ -1,5 +1,6 @@
 fastapi==0.103.0
 uvicorn==0.23.2
+networkx==2.8
 torch==2.0.1
 cirq==1.2.0
 qiskit==0.44.0
