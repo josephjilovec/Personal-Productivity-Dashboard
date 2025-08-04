@@ -6,4 +6,3 @@ cirq==1.2.0
 qiskit==0.44.0
 pennylane==0.31.0
 pytest==7.4.0
-axios==1.4.0
