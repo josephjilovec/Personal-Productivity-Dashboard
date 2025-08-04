@@ -1,9 +1,9 @@
-fastapi==0.103.0
-uvicorn==0.23.2
-networkx==2.8
-torch==2.0.1
-cirq==1.2.0
-qiskit==0.44.0
-pennylane==0.31.0
-pytest==7.4.0
-# networkx version removed to let pip resolve
+fastapi
+uvicorn
+networkx
+torch
+cirq
+qiskit
+pennylane
+pytest
+# let pip resolve for best compatible versions
